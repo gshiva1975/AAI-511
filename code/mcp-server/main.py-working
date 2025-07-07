@@ -1,0 +1,29 @@
+
+#!/usr/bin/env python3
+import sys
+import logging
+from fastmcp import FastMCP
+
+# 1) Configure logging → stderr
+logger = logging.getLogger("EchoService")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+logger.addHandler(handler)
+
+# 2) Instantiate FastMCP (stdio transport)
+mcp = FastMCP("echo_service")
+
+# 3) Define a simple echo tool
+@mcp.tool()
+async def get_docs(**payload) -> dict:
+    """
+    Echo back whatever JSON-RPC params are passed in.
+    """
+    logger.info(f"Received payload: {payload}")
+    return payload
+
+# 4) Run over stdin/stdout
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
+

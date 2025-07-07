@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0","wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "midi_mcp_service"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+  "fastmcp",
+  "pretty_midi",
+  "tensorflow",
+  "scikit-learn"
+]
+

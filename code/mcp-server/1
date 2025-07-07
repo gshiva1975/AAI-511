@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mcp-server": {
+      "command": "/Users/gshiva/AA-511/example/mcp-server-example/mcp-server/.venv/bin/uv",
+      "args": [
+        "--directory",
+        "/Users/gshiva/AA-511/example/mcp-server-example/mcp-server",
+        "run",
+        "main.py"
+      ]
+    }
+  }
+}
+
