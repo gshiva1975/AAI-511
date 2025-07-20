@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "mcp-server": {
+            "command": "/Users/gshiva/.local/bin/uv",  # It's better to use the absolute path to the uv command
+            "args": [
+                "--directory",
+                "/Users/gshiva/AA-511/example/mcp-server-example/mcp-server",
+                "run",
+                "main.py"
+            ]
+        }
+    }
+}
