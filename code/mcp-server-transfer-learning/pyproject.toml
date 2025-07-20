@@ -1,0 +1,26 @@
+[project]
+name = "composer-mcp-server"
+version = "0.1.0"
+description = "MobileNetV2 composer classification with FastMCP"
+requires-python = ">=3.10"
+
+authors = [
+  { name = "G S", email = "gangadharsinghshiva@gmail.com" }
+]
+
+dependencies = [
+  "fastmcp>=0.3.1",
+  "tensorflow>=2.12",
+  "scikit-learn",
+  "pandas",
+  "numpy",
+  "pillow"
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = { find = {} }
+
