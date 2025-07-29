@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+import sys
+import os
+import glob
+import logging
+import numpy as np
+import pretty_midi
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Embedding, LSTM, Dropout, Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
+from fastmcp import FastMCP
+
+# Logging setup
+logger = logging.getLogger("MidiComposerService")
+logger.setLevel(logging.WARNING)
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+logger.addHandler(handler)
+
+# Extract note pitches from a MIDI file
+def extract_notes_from_midi(midi_path: str):
+    try:
+        midi_data = pretty_midi.PrettyMIDI(midi_path)
+        notes = []
+        for instrument in midi_data.instruments:
+            if not instrument.is_drum:
+                for note in instrument.notes:
+                    notes.append(note.pitch)
+        return notes
+    except Exception:
+        return []
+
+# Prepare dataset from a flat directory of MIDI files
+def prepare_dataset_flat(root: str, max_len: int):
+    root = os.path.expanduser(root)
+    if not os.path.isdir(root):
+        raise FileNotFoundError(f"Dataset not found: {root}")
+
+    sequences, labels = [], []
+    for file in os.listdir(root):
+        if file.endswith(".mid") or file.endswith(".midi"):
+            label = file.split()[0]  # Use first token of filename as label
+            path = os.path.join(root, file)
+            notes = extract_notes_from_midi(path)
+            if len(notes) > 100:
+                padded = np.pad(notes[:max_len], (0, max_len - len(notes[:max_len])), 'constant')
+                sequences.append(padded)
+                labels.append(label)
+
+    if not sequences:
+        raise ValueError(f"No valid MIDI data in {root}")
+
+    X = np.array(sequences)
+    enc = LabelEncoder()
+    y_idx = enc.fit_transform(labels)
+    y = to_categorical(y_idx)
+    return X, y, list(enc.classes_)
+
+# LSTM model builder
+def build_lstm_model(max_len: int, num_classes: int):
+    model = Sequential([
+        Embedding(input_dim=128, output_dim=64, input_length=max_len),
+        LSTM(128, return_sequences=True),
+        Dropout(0.3),
+        LSTM(64),
+        Dense(64, activation='relu'),
+        Dense(num_classes, activation='softmax')
+    ])
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(), metrics=['accuracy'])
+    return model
+
+# Predict composer
+def predict_with_model(model, classes, sequence: np.ndarray):
+    probs = model.predict(sequence, verbose=0)[0]
+    idx = int(np.argmax(probs))
+    return classes[idx], float(probs[idx])
+
+# Initialize FastMCP app
+mcp = FastMCP("midi_composer_service")
+
+# MCP training tool
+@mcp.tool()
+async def train_model(
+    dataset_dir: str = "~/Downloads/music",
+    seq_length: int = 200,
+    epochs: int = 10,
+    batch_size: int = 16,
+    model_path: str = "lstm_model.keras",
+    classes_path: str = "midi_classes.npy"
+) -> dict:
+    try:
+        X, y, classes = prepare_dataset_flat(dataset_dir, seq_length)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        model = build_lstm_model(seq_length, y.shape[1])
+        model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=(X_test, y_test), verbose=0)
+        loss, acc = model.evaluate(X_test, y_test, verbose=0)
+        model.save(model_path)
+        np.save(classes_path, np.array(classes))
+        return {
+            "model_path": model_path,
+            "classes_path": classes_path,
+            "test_accuracy": float(acc),
+            "classes": classes
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# MCP prediction tool
+@mcp.tool()
+async def predict_composer(
+    midi_path: str,
+    seq_length: int = 200,
+    model_path: str = "lstm_model.keras",
+    classes_path: str = "midi_classes.npy"
+) -> dict:
+    try:
+        model = load_model(model_path)
+        classes = np.load(classes_path, allow_pickle=True).tolist()
+        notes = extract_notes_from_midi(os.path.expanduser(midi_path))
+        seq = np.pad(notes[:seq_length], (0, seq_length - len(notes[:seq_length])), 'constant')
+        seq = seq.reshape(1, seq_length)
+        composer, confidence = predict_with_model(model, classes, seq)
+        return {
+            "composer": composer,
+            "confidence": confidence
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "composer": None,
+            "confidence": 0.0
+        }
+
+# Run the MCP server
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
+
