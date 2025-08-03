@@ -18,7 +18,7 @@ logger = logging.getLogger("mcp-cnn-midi")
 
 mcp = FastMCP("cnn_midi_classifier")
 
-# 🎼 Extract MIDI note features
+#  Extract MIDI note features
 def extract_midi_features(midi_path):
     try:
         midi = pretty_midi.PrettyMIDI(midi_path)
@@ -31,7 +31,7 @@ def extract_midi_features(midi_path):
         logger.error(f"Failed to parse {midi_path}: {e}")
         return []
 
-# 🎼 Prepare dataset: Walk through train/test/dev and extract MIDI features
+#  Prepare dataset: Walk through train/test/dev and extract MIDI features
 def load_dataset(data_dir, segment_duration=5.0, num_pitch_bins=128, num_duration_bins=50):
     X, y = [], []
     composers = sorted([d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))])
@@ -51,7 +51,7 @@ def load_dataset(data_dir, segment_duration=5.0, num_pitch_bins=128, num_duratio
                     y.extend([composer_to_label[composer]] * len(features))
     return np.array(X), np.array(y), composer_to_label
 
-# 🎼 Segment features from MIDI notes
+#  Segment features from MIDI notes
 def segment_features(notes, segment_duration=5.0, num_pitch_bins=128, num_duration_bins=50):
     segmented_features = []
     notes.sort(key=lambda x: x[2])  # Sort by start time
@@ -79,7 +79,7 @@ def segment_features(notes, segment_duration=5.0, num_pitch_bins=128, num_durati
         start_time += segment_duration
     return segmented_features
 
-# 🏗 Build CNN Model
+#  Build CNN Model
 def build_cnn(input_shape, num_classes):
     model = Sequential([
         Conv1D(64, 5, activation='relu', input_shape=input_shape),
@@ -96,7 +96,7 @@ def build_cnn(input_shape, num_classes):
     model.compile(optimizer=Adam(learning_rate=0.001), loss="sparse_categorical_crossentropy", metrics=["accuracy"])
     return model
 
-# 🚀 MCP Tool: Train Model
+#  MCP Tool: Train Model
 @mcp.tool()
 async def train_model(data_root: str = "~/Downloads/Composer_Dataset/NN_midi_files_extended/train", epochs: int = 20, batch_size: int = 32):
     data_root = os.path.expanduser(data_root)
@@ -119,7 +119,7 @@ async def train_model(data_root: str = "~/Downloads/Composer_Dataset/NN_midi_fil
 
     return {"message": "Training complete", "accuracy": float(acc), "loss": float(loss)}
 
-# 🚀 MCP Tool: Predict
+#  MCP Tool: Predict
 @mcp.tool()
 async def predict_midi(midi_path: str):
     model = tf.keras.models.load_model("cnn_midi_model.h5")
