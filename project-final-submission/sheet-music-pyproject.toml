@@ -1,0 +1,19 @@
+[project]
+name = "composer-mcp-server"
+version = "0.1.0"
+description = "PDF composer classification with MCP and Claude UI support"
+requires-python = ">=3.10"
+
+authors = [
+    {name = "G S", email = "gangadharsinghshiva@gmail.com"}
+]
+
+dependencies = [
+    "tensorflow",
+    "scikit-learn",
+    "pdf2image",
+    "pillow",
+    "fastmcp>=0.3.1",
+    "numpy",
+]
+

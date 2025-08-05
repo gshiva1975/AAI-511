@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "mcp-server-tuned": {
+      "command": "/Users/gshiva/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/Users/gshiva/AAI-511-code-submit/sheet-music"
+        "run",
+        "mcp-server-music-midi-files.py"
+      ]
+    },
+    "mcp-server-py": {
+      "command": "/Users/gshiva/.local/bin/uv",
+      "args": [
+        "--directory",
+        "/Users/gshiva/AAI-511-code-submit/sheet-music"
+        "run",
+        "mcp-server-music-sheet-files.py"
+      ]
+    }
+  }
+}
+
